@@ -1,2 +1,2 @@
-# stmball_python_package_template
-A template for my Python packages.
+# stmfootball
+a footballphobic's attempt to win the fantasy league
