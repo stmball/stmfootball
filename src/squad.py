@@ -51,7 +51,7 @@ class Squad:
             raise SquadError("Squad must be a list of players")
 
         elif len(squad) != 15:
-            raise SquadError("Squad must contain 15 players")
+            raise SquadError(f"Squad must contain 15 players, not {len(squad)}")
 
         elif not self._check_squad_positions(squad):
             raise SquadError("Squad is not valid")
@@ -117,10 +117,42 @@ class Squad:
             raise SquadError("Vice captain must be a player")
         elif vice_captain not in self._team:
             raise SquadError("Vice captain must be in the team")
-        elif vice_captain == self._captain:
+        elif vice_captain.name == self.captain.name:
             raise SquadError("Vice captain must be different to the captain")
         else:
             self._vice_captain = vice_captain
+
+    def squad_cost(self) -> int:
+        """Get the cost of the squad."""
+        return sum([player.cost for player in self.squad])
+
+    def team_cost(self) -> int:
+        """Get the cost of the team."""
+        return sum([player.cost for player in self.team])
+
+    def squad_total_points(
+        self, points_df: pd.DataFrame, points_col: str = "total_points"
+    ) -> int:
+        """Calculate the total points of a squad from a dataframe of points."""
+        points_df["full name"] = (
+            points_df["first_name"] + " " + points_df["second_name"]
+        )
+        only_squad = points_df[
+            points_df["full name"].isin([player.name for player in self.squad])
+        ]
+        return sum(only_squad[points_col])
+
+    def team_total_points(
+        self, points_df: pd.DataFrame, points_col: str = "total_points"
+    ) -> int:
+        """Calculate the total points of a squad from a dataframe of points."""
+        points_df["full name"] = (
+            points_df["first_name"] + " " + points_df["second_name"]
+        )
+        only_team = points_df[
+            points_df["full name"].isin([player.name for player in self.team])
+        ]
+        return sum(only_team[points_col])
 
     def _check_squad_positions(self, squad: tp.List[Player]) -> bool:
         """Check the positions of the players in the squad.
@@ -187,6 +219,22 @@ class Squad:
         squad = [Player.from_pandas_row(row) for _, row in df.iterrows()]
 
         # TODO: Make this more robust - for now do a 4-4-2
+        gk = [player for player in squad if player.position == Position.GK][0]
+        defenders = [player for player in squad if player.position == Position.DEF][:4]
+        midfielders = [player for player in squad if player.position == Position.MID][
+            :4
+        ]
+        forwards = [player for player in squad if player.position == Position.FWD][:2]
+        team = [gk] + defenders + midfielders + forwards
+        captain = team[0]
+        vice_captain = team[1]
+
+        return cls(squad, team, captain, vice_captain)
+
+    @classmethod
+    def from_player_list(cls, player_list: tp.List[Player]):
+        """Create a squad from a list of players, with random team, captain and vice captain."""
+        squad = player_list
         gk = [player for player in squad if player.position == Position.GK][0]
         defenders = [player for player in squad if player.position == Position.DEF][:4]
         midfielders = [player for player in squad if player.position == Position.MID][
