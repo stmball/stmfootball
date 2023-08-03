@@ -70,7 +70,7 @@ class LinearPredictor(BasePredictor):
             self.model.fit(np.array(range(len(x_row))).reshape(-1, 1), x_row)
             forcasts.append(self.model.predict(np.array(len(x_row)).reshape(-1, 1)))
 
-        return forcasts
+        return np.array(forcasts).flatten()
 
 
 class ARIMAPredictor(BasePredictor):

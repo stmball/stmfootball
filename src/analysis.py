@@ -1,10 +1,12 @@
 """Functions for analysing the data."""
 import typing as tp
 
+import numpy as np
 import pandas as pd
 
 from src.core import Season
 from src.player import Player
+from src.predictors import BasePredictor
 
 
 def get_top_players_by_position(
@@ -64,7 +66,7 @@ def get_player_points_by_year(
 
 
 def add_predicted_points_to_df(
-    df: pd.DataFrame, seasons: tp.List[Season]
+    df: pd.DataFrame, seasons: tp.List[Season], predictor: BasePredictor
 ) -> pd.DataFrame:
     """Add a column to the dataframe with the predicted points for the next season.
 
@@ -75,8 +77,20 @@ def add_predicted_points_to_df(
     Returns:
         pd.DataFrame: Dataframe with predicted points column
     """
-    df["predicted_points"] = df.apply(
-        lambda row: Player.from_pandas_row(row).predict_points_for_next_season(seasons),
-        axis=1,
-    )
+    historical_data = []
+    for _, row in df.iterrows():
+        player = Player.from_pandas_row(row)
+        historic_player = player.get_historic_points_by_season(seasons)
+        historical_data.append(list(historic_player.values()))
+
+    historical_data = np.array(historical_data)
+    exp_predictor = predictor()  # type: ignore
+
+    if exp_predictor.needs_training:
+        exp_predictor.train(historical_data)
+
+    predictions = exp_predictor.predict(historical_data)
+    print(predictions.shape)
+
+    df["predicted_points"] = predictions
     return df
