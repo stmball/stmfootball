@@ -82,6 +82,9 @@ class Player:
             float: Predicted number of points
         """
         historical_data = self.get_historic_points_by_season(seasons)
+        if len(list(filter(lambda x: x != 0, historical_data.values()))) < 3:
+            # Not enough data to make a prediction
+            return 0
         X = [[season.value] for season in seasons]
         y = list(historical_data.values())
         model.fit(X, y)

@@ -217,6 +217,8 @@ class Efficientv2(BaseOptimiser):
         self.budget_breakdown = budget_breakdown
 
         if sum(self.budget_breakdown.values()) != self.budget:
+            print(self.budget_breakdown)
+            print(self.budget)
             raise ValueError(f"Budget breakdown doesn't sum to {self.budget}")
 
     def optimise(self, df: pd.DataFrame) -> tp.List[Player]:
