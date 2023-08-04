@@ -3,6 +3,7 @@
 import typing as tp
 from abc import abstractmethod  # pylint: disable=E0611
 
+import mip
 import pandas as pd
 
 from src.player import Player, Position
@@ -484,5 +485,62 @@ class Random(BaseOptimiser):
             ):
                 self.squad.append(player)
                 self.budget -= player.cost
+
+        return self.squad
+
+
+class MIP(BaseOptimiser):
+    """Uses integer programming to find an optimal solution."""
+
+    def __init__(
+        self,
+        cost_col: str = "now_cost",
+        points_col: str = "predicted_points",
+    ) -> None:
+        """Initialise the MIP solver.
+
+        Args:
+            cost_col (str, optional): Cost column in the dataframe. Defaults to "now_cost".
+            points_col (str, optional): Points column in the dataframe. Defaults to "predicted_points".
+        """
+        super().__init__("MIP", cost_col, points_col, None)
+
+    def optimise(self, df) -> tp.List[Player]:
+        """Optimise a squad according to the MIP algorithm.
+
+        Args:
+            df (pd.DataFrame): Dataframe of all players with their stats
+
+        Returns:
+            tp.List[Player]: List of players in the squad
+        """
+        costs = df[self.cost_col].to_list()
+        values = df[self.points_col].to_list()
+        positions = df["element_type"].to_list()
+        teams = df["team"].to_list()
+        indexes = df.index.to_list()
+
+        m = mip.Model(sense=mip.MAXIMIZE)
+
+        y = [m.add_var(var_type=mip.BINARY) for i in indexes]
+
+        m.objective = mip.xsum(y[i] * values[i] for i in indexes)
+
+        m += mip.xsum(y[i] * costs[i] for i in indexes) <= self.budget
+
+        for position in Position:
+            m += (
+                mip.xsum(y[i] for i in indexes if positions[i] == position.value)
+                == self.squad_numbers[position]
+            )
+
+        for team in range(1, 21):
+            m += mip.xsum(y[i] for i in indexes if teams[i] == team) <= 3
+
+        m.optimize()
+
+        for i in indexes:
+            if y[i].x >= 0.99:
+                self.squad.append(Player.from_pandas_row(df.iloc[i]))
 
         return self.squad
