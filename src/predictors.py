@@ -7,6 +7,7 @@ import keras
 import numpy as np
 import numpy.typing as npt
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import MinMaxScaler
 from statsmodels.tsa.arima.model import ARIMA
 
 
@@ -141,11 +142,16 @@ class LSTMPredictor(BasePredictor):
         """Train the LSTM model.
 
         Args:
-            x (npt.NDArray): Array of time series
+            x (npt.NDArray) Array of time series
         """
+
+        minmax = MinMaxScaler()
         y = x[:, -1]
         x = x[:, -(1 + self.no_seasons) : -1]
+        x = minmax.fit_transform(x.reshape(-1, 1)).reshape(-1, self.no_seasons, 1)
+        y = minmax.transform(y.reshape(-1, 1)).reshape(-1, 1)
         self.model.fit(x, y, epochs=100, verbose=0)
+        self.scaler = minmax
 
     def predict(self, x: npt.NDArray) -> npt.NDArray:
         """Predict using the LSTM model.
@@ -156,5 +162,7 @@ class LSTMPredictor(BasePredictor):
         Returns:
             npt.NDArray: Next point for each row in the time series
         """
+
         x = x[:, -self.no_seasons :]
-        return self.model.predict(x).flatten()
+        x = self.scaler.transform(x.reshape(-1, 1)).reshape(-1, self.no_seasons, 1)
+        return self.scaler.inverse_transform(self.model.predict(x)).flatten()

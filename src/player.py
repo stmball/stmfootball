@@ -1,5 +1,6 @@
 """Module for the Player class."""
 
+import os
 import typing as tp
 from enum import Enum
 from pathlib import Path
@@ -160,6 +161,11 @@ class Player:
         base_path = Path(__file__).parent.parent
         season_folder = f"{season.name[1:].replace('_', '-')}"
         player_id = self._get_player_id_for_season(season)
+
+        difficult_folder_name = self._get_difficult_folder_name(
+            base_path, season_folder, player_id
+        )
+
         if season.value < 3:
             # Seasons 2016/17 and 2017/18 have different file structure
             return (
@@ -168,9 +174,9 @@ class Player:
                 / "data"
                 / season_folder
                 / "players"
-                / f"{self.first_name}_{self.last_name}"
+                / difficult_folder_name
                 / "gw.csv"
-            )
+            ).resolve()
         else:
             return (
                 base_path
@@ -178,6 +184,24 @@ class Player:
                 / "data"
                 / season_folder
                 / "players"
-                / f"{self.first_name}_{self.last_name}_{player_id}"
+                / difficult_folder_name
                 / "gw.csv"
-            )
+            ).resolve()
+
+    def _get_difficult_folder_name(
+        self, base_path: Path, season_folder: str, player_id: int
+    ) -> Path:
+        for filename in os.listdir(
+            base_path / "data" / "data" / season_folder / "players"
+        ):
+            if (
+                filename.lower()
+                == f"{self.first_name.lower()}_{self.last_name.lower()}_{player_id}"
+                or filename.lower()
+                == f"{self.first_name.lower()}_{self.last_name.lower()}"
+            ):
+                return Path(filename)
+
+        raise PlayerError(
+            f"No player with name {self.first_name} {self.last_name} found for season {season_folder}"
+        )

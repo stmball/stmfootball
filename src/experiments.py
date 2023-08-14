@@ -6,50 +6,14 @@ import numpy.typing as npt
 import pandas as pd
 from sklearn.metrics import mean_squared_error as mse
 
-from .predictors import BasePredictor
-from .squad import Squad
-from .squad_optimisers import BaseOptimiser
+from src.core import FootballError
+from src.predictors import BasePredictor
 
 
-class SquadOptimiserExperiment:
-    """Class for testing squad optimisers by giving them the true values of players and seeing how they optimise."""
+class ExperimentError(FootballError):
+    """Base class for exceptions in this module."""
 
-    def run(
-        self,
-        df: pd.DataFrame,
-        squad_optimisers: tp.List[BaseOptimiser],
-        cost_col: str = "now_cost",
-        points_col: str = "predicted_points",
-    ) -> pd.DataFrame:
-        """Run the experiment.
-
-        Args:
-            df (pd.DataFrame): Dataframe of players
-            squad_optimisers (tp.List[BaseOptimiser]): List of squad optimisers to test
-            cost_col (str, optional): Cost column in the dataframe. Defaults to "now_cost".
-            points_col (str, optional): Points column in the dataframe. Defaults to "predicted_points".
-
-        Returns:
-            pd.DataFrame: Dataframe of results
-        """
-        scores = []
-        for squad_optimiser in squad_optimisers:
-            squad_optimiser = squad_optimiser(cost_col=cost_col, points_col=points_col)  # type: ignore
-            so_name = squad_optimiser.name
-            squad = Squad.from_player_list(squad_optimiser.optimise(df))
-
-            scores.append(
-                {
-                    "squad_optimiser": so_name,
-                    "squad_total_points": squad.squad_total_points(df),
-                    "team_total_points": squad.team_total_points(df),
-                    "squad_cost": squad.squad_cost(),
-                    "team_cost": squad.team_cost(),
-                    "squad": sorted(squad.squad, key=lambda x: x.name),
-                }
-            )
-
-        return pd.DataFrame(scores)
+    pass
 
 
 class PredictorExperiment:

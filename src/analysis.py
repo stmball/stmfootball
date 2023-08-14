@@ -90,7 +90,6 @@ def add_predicted_points_to_df(
         exp_predictor.train(historical_data)
 
     predictions = exp_predictor.predict(historical_data)
-    print(predictions.shape)
 
     df["predicted_points"] = predictions
     return df
