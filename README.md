@@ -1,5 +1,5 @@
 # stmfootball
-a footballphobic's attempt to win the fantasy league
+A footballphobic's attempt to win the fantasy league
 
 ## Dataset
 
